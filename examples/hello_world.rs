@@ -1,7 +1,7 @@
 #[tokio::main]
 pub async fn main() {
     let value = 22;
-    let scope = moro::async_scope!(|scope| {
+    let scope = moro_local::async_scope!(|scope| {
         let future1 = scope.spawn(async {
             let future2 = scope.spawn(async {
                 value // access stack values that outlive scope

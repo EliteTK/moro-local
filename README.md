@@ -1,10 +1,10 @@
-# moro
+# moro-local
 
-Experiments with structured concurrency in Rust
+A fork of [`moro`](https://github.com/nikomatsakis/moro) that runs on stable Rust and focuses on local (non-`Send`) futures.
 
 ## TL;DR
 
-Similar to [rayon] or [`std::thread::scope`], moro lets you create a *scope* using a `moro::async_scope!` macro. Within this scope, you can spawn jobs that can access stack data defined outside the scope:
+Similar to [rayon] or [`std::thread::scope`], moro lets you create a _scope_ using a `moro::async_scope!` macro. Within this scope, you can spawn jobs that can access stack data defined outside the scope:
 
 ```rust
 let value = 22;
@@ -30,14 +30,14 @@ eprintln!("{result}"); // prints 88
 Invoke `moro::async_scope!(|scope| ...)` and you get back a future
 for the overall scope that you can await to start up the scope.
 
-Within the scope body (`...`) you can invoke `scope.spawn(async { ... })` to spawn a job. 
-This job must terminate before the scope itself is considered completed. 
+Within the scope body (`...`) you can invoke `scope.spawn(async { ... })` to spawn a job.
+This job must terminate before the scope itself is considered completed.
 The result of `scope.spawn` is a future whose result is the result returned by the job.
 
 ## Early termination and cancellation
 
-Moro scopes support *early termination* or *cancellation*.
-You can invoke [`scope.terminate(v).await`](https://docs.rs/moro/latest/moro/struct.Scope.html#method.terminate) 
+Moro scopes support _early termination_ or _cancellation_.
+You can invoke [`scope.terminate(v).await`](https://docs.rs/moro/latest/moro/struct.Scope.html#method.terminate)
 and all spawned threads within the scope will immediately stop executing.
 Termination is commonly used when `v` is a `Result` to make `Err` values cancel
 (we offer helper methods like `unwrap_or_cancel` for this in the prelude).
@@ -48,7 +48,7 @@ the input. If any integers are negative, the entire scope is canceled.
 
 ## Future work: Integrating with rayon-like iterators
 
-I want to do this. :) 
+I want to do this. :)
 
 ## Frequently asked questions
 
@@ -62,9 +62,9 @@ Apparently though "moros" is also the ['hateful' spirit of impending doom](https
 
 Yes! I'm aware of...
 
-* [`async_nursery`](https://crates.io/crates/async_nursery), which is similar to moro but provides parallel execution (not just concurrent), but -- as a result -- requires a `'static` bound.
-* [`FuturesUnordered`](https://docs.rs/futures/latest/futures/stream/struct.FuturesUnordered.html), which can be used as a kind of nursery, but which also has a [number](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/aws_engineer/solving_a_deadlock.html) of [known](https://github.com/rust-lang/futures-rs/issues/2387) [footguns](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_battles_buffered_streams.html). This type is currently used in the moro implementation, but moro's API prevents those footguns from happening.
-* [`select`](https://docs.rs/futures/latest/futures/future/fn.select.html) operations are commonly used to "model" parallel streams; like with `FuturesUnordered`, this is an errorprone approach, and moro evolved in part as an alternative to `select`-like APIs.
+- [`async_nursery`](https://crates.io/crates/async_nursery), which is similar to moro but provides parallel execution (not just concurrent), but -- as a result -- requires a `'static` bound.
+- [`FuturesUnordered`](https://docs.rs/futures/latest/futures/stream/struct.FuturesUnordered.html), which can be used as a kind of nursery, but which also has a [number](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/aws_engineer/solving_a_deadlock.html) of [known](https://github.com/rust-lang/futures-rs/issues/2387) [footguns](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_battles_buffered_streams.html). This type is currently used in the moro implementation, but moro's API prevents those footguns from happening.
+- [`select`](https://docs.rs/futures/latest/futures/future/fn.select.html) operations are commonly used to "model" parallel streams; like with `FuturesUnordered`, this is an errorprone approach, and moro evolved in part as an alternative to `select`-like APIs.
 
 ### Why do moro spawns only run concurrently, not parallel?
 
@@ -72,7 +72,7 @@ Parallel moro tasks cannot, with Rust as it is today, be done safely. The full d
 
 ### Isn't running concurrently a huge limitation?
 
-Sort of? Parallel would definitely be nice, but for many async servers, you get parallelism between connections and you don't need to have parallelism *within* a connection. You can also use other mechanisms to get parallelism, but `'static` bounds are required.
+Sort of? Parallel would definitely be nice, but for many async servers, you get parallelism between connections and you don't need to have parallelism _within_ a connection. You can also use other mechanisms to get parallelism, but `'static` bounds are required.
 
 ### OK, but why do moro spawns only run concurrently, not parallel? Give me the details!
 
@@ -82,7 +82,7 @@ The [`Future::poll`](https://doc.rust-lang.org/std/future/trait.Future.html#tyme
 async fn method() {
     let data = vec![1, 2, 3];
     let some_future = moro::async_scope!(|scope| {
-        scope.spawn(async { 
+        scope.spawn(async {
             for d in &data {
                 tokio::task::yield_now().await;
             }
@@ -101,11 +101,9 @@ If moro tasks were running in parallel, there would be no way for us to ensure t
 
 But because moro is limited to concurrency, this is fine. Tasks in the scope only advance when they are polled (they're not parallel) -- so when you "forget" the scope, you simply stop executing the tasks too.
 
-Note that this problem doesn't occur in libraries like [rayon](https://crates.io/crates/rayon) or the new [`std::thread::scope`](https://doc.rust-lang.org/std/thread/fn.scope.html) call. This is because sync code has a capability that async code lacks: a sync function can block its caller ([this is because safe Rust forbids longjmp](http://smallcultfollowing.com/babysteps/blog/2016/10/02/observational-equivalence-and-unsafe-code/)). But in async code, under Rust's current model, so long as you "await" something, you are giving up control to your caller and they are free to never poll you again. This means, I believe, that it is not possible to have a "scope" like moro's that safely refers to data *outside* of the scope, since that data is owned by your callers, and you cannot force them not to return. Put another way, async code *can*, by cooperating with the executor, ensure that some future runs to completion. Any call to `tokio::spawn` will do that. But you cannot ensure that your future is *embedded in something else* that runs to completion.
+Note that this problem doesn't occur in libraries like [rayon](https://crates.io/crates/rayon) or the new [`std::thread::scope`](https://doc.rust-lang.org/std/thread/fn.scope.html) call. This is because sync code has a capability that async code lacks: a sync function can block its caller ([this is because safe Rust forbids longjmp](http://smallcultfollowing.com/babysteps/blog/2016/10/02/observational-equivalence-and-unsafe-code/)). But in async code, under Rust's current model, so long as you "await" something, you are giving up control to your caller and they are free to never poll you again. This means, I believe, that it is not possible to have a "scope" like moro's that safely refers to data _outside_ of the scope, since that data is owned by your callers, and you cannot force them not to return. Put another way, async code _can_, by cooperating with the executor, ensure that some future runs to completion. Any call to `tokio::spawn` will do that. But you cannot ensure that your future is _embedded in something else_ that runs to completion.
 
 I do not believe parallel execution can be safely enabled without modifying the `Future` trait or Rust in some way. There are various proposals to change the `Future` trait to permit moro to support parallel execution (those same proposals would help for supporting io-uring, DMA, and other features), but the exact path forward hasn't been settled.
 
-
 [rayon]: https://crates.io/crates/rayon
-
 [`std::thread::scope`]: https://doc.rust-lang.org/std/thread/fn.scope.html

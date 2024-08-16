@@ -6,7 +6,7 @@ async fn main() {
 
 /// Run the simulated journal.
 pub async fn run(inputs: &Vec<i32>) -> anyhow::Result<()> {
-    moro::async_scope!(|scope| {
+    moro_local::async_scope!(|scope| {
         for input in inputs {
             let _ = scope.spawn(validate(input)).or_cancel(scope);
         }

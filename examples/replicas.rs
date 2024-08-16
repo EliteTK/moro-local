@@ -7,7 +7,7 @@ use tokio::sync::mpsc::channel;
 
 #[tokio::main]
 async fn main() {
-    moro::async_scope!(|scope| {
+    moro_local::async_scope!(|scope| {
         // Start up the replicas
         let replicas = 3;
         let mut host_senders = vec![];
