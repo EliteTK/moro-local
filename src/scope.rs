@@ -1,6 +1,8 @@
 use std::{cell::RefCell, marker::PhantomData, pin::Pin, rc::Rc, task::Poll};
 
-use futures::{channel::oneshot, future::LocalBoxFuture, stream::FuturesUnordered, Future, Stream};
+use futures_channel::oneshot;
+use futures_core::{future::LocalBoxFuture, Future, Stream};
+use futures_util::stream::FuturesUnordered;
 
 use crate::Spawned;
 

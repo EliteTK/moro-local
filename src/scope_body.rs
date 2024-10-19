@@ -1,6 +1,6 @@
 use std::pin::Pin;
 
-use futures::Future;
+use futures_core::Future;
 use pin_project::pin_project;
 
 use crate::body::Body;

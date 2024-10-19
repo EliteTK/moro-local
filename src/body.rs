@@ -1,6 +1,6 @@
 use std::{pin::Pin, rc::Rc, task::Poll};
 
-use futures::Future;
+use futures_core::Future;
 use pin_project::{pin_project, pinned_drop};
 
 use crate::scope::Scope;

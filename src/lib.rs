@@ -139,7 +139,7 @@ macro_rules! async_scope {
     }};
 }
 
-use futures::future::LocalBoxFuture;
+use futures_core::future::LocalBoxFuture;
 
 pub use self::scope::Scope;
 pub use self::scope_body::ScopeBody;
