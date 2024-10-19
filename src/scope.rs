@@ -98,7 +98,7 @@ impl<'scope, 'env, R> Scope<'scope, 'env, R> {
         T: 'scope,
     {
         if self.terminated.borrow().is_none() {
-            self.terminated.replace(Some(value.into()));
+            self.terminated.replace(Some(value));
         }
 
         // The code below will never run

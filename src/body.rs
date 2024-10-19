@@ -45,7 +45,7 @@ impl<'scope, 'env, R, F> Body<'scope, 'env, R, F> {
 }
 
 #[pinned_drop]
-impl<'scope, 'env, R, F> PinnedDrop for Body<'scope, 'env, R, F> {
+impl<R, F> PinnedDrop for Body<'_, '_, R, F> {
     fn drop(self: Pin<&mut Self>) {
         // Fulfill our unsafe contract and ensure we drop other fields
         // before we drop scope.
@@ -80,7 +80,7 @@ where
         // so forward that result. Otherwise, the `result` from our body future
         // should be available, so return that.
         match ready!(this.scope.poll_jobs(cx)) {
-            Some(v) => return Poll::Ready(v),
+            Some(v) => Poll::Ready(v),
             None => match this.result.take() {
                 None => Poll::Pending,
                 Some(v) => Poll::Ready(v),
