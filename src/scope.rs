@@ -80,7 +80,7 @@ impl<'scope, 'env, R> Scope<'scope, 'env, R> {
     ///
     /// ```rust
     /// # futures::executor::block_on(async {
-    /// let result = moro::async_scope!(|scope| {
+    /// let result = moro_local::async_scope!(|scope| {
     ///     scope.spawn(async { /* ... */ });
     ///
     ///     // Calling `scope.terminate` here will terminate the async
