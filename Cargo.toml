@@ -9,10 +9,10 @@ description = "Experimental structured concurrency support for async Rust (simil
 
 [dependencies]
 async-trait = "0.1.56"
-pin-project = "1.1.5"
 futures-channel = { version = "0.3.21", default-features = false, features = ["alloc"] }
 futures-core = { version = "0.3.21", default-features = false, features = ["alloc"] }
 futures-util = { version = "0.3.21", default-features = false, features = ["alloc"] }
+pin-project-lite = "0.2.14"
 
 [dev-dependencies]
 futures = "0.3.21"
